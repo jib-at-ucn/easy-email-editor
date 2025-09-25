@@ -3,8 +3,9 @@ import reactRefresh from '@vitejs/plugin-react-refresh';
 import path from 'path';
 import { injectHtml } from 'vite-plugin-html';
 
-export default defineConfig({
+export default defineConfig({  
   server: {
+    port: 5137,
     fs: {
       strict: false,
     },

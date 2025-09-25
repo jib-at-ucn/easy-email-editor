@@ -3,9 +3,8 @@ import { Router, Switch, Route } from 'react-router-dom';
 import { Provider } from 'react-redux';
 import Page from '@demo/components/Page';
 import store from '@demo/store';
-import '@demo/styles/common.scss';
 import { history } from './utils/history';
-import Home from '@demo/pages/Home';
+import '@demo/styles/common.scss';
 
 const Editor = React.lazy(() => import('@demo/pages/Editor'));
 
@@ -24,11 +23,6 @@ function App() {
                 justifyContent: 'center',
               }}
             >
-              <img
-                width='200px'
-                src='/loading'
-                alt=''
-              />
               <p
                 style={{
                   fontSize: 24,
@@ -45,10 +39,6 @@ function App() {
               <Route
                 path='/'
                 exact
-                component={Home}
-              />
-              <Route
-                path='/editor'
                 component={Editor}
               />
             </Switch>

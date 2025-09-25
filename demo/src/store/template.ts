@@ -1,11 +1,11 @@
 import { article, IArticle } from '@demo/services/article';
 import createSliceState from './common/createSliceState';
 import { Message } from '@arco-design/web-react';
-import { history } from '@demo/utils/history';
 import { emailToImage } from '@demo/utils/emailToImage';
 import { IBlockData, BlockManager, BasicType, AdvancedType } from 'easy-email-core';
 import { IEmailTemplate } from 'easy-email-editor';
 import { getTemplate } from '@demo/config/getTemplate';
+import { environment } from '@demo/environment';
 
 export function getAdaptor(data: IArticle): IEmailTemplate {
   const content = JSON.parse(data.content.content) as IBlockData;
@@ -21,33 +21,28 @@ export default createSliceState({
   name: 'template',
   initialState: null as IEmailTemplate | null,
   reducers: {
-    set: (state, action) => {
+    set: (_state, action) => {
       return action.payload;
     },
   },
   effects: {
     fetchById: async (
-      state,
+      _state,
       {
-        id,
-        userId,
+        uid
       }: {
-        id: number;
-        userId: number;
+        uid: string;
       },
     ) => {
       try {
-        let data = await getTemplate(id);
-        if (!data) {
-          data = await article.getArticle(id, userId);
-        }
-        return getAdaptor(data);
+        return await fetch(environment.baseUrl + `/templates/${uid}`)
+          .then(r => r.json() as Promise<IEmailTemplate>);
       } catch (error) {
-        history.replace('/');
+        //history.replace('/');
         throw error;
       }
     },
-    fetchDefaultTemplate: async state => {
+    fetchDefaultTemplate: async _state => {
       return {
         subject: 'Welcome to Easy-email',
         subTitle: 'Nice to meet you!',
@@ -57,7 +52,7 @@ export default createSliceState({
       } as IEmailTemplate;
     },
     create: async (
-      state,
+      _state,
       payload: {
         template: IEmailTemplate;
         success: (id: number, data: IEmailTemplate) => void;
@@ -126,7 +121,7 @@ export default createSliceState({
         }
       }
     },
-    removeById: async (state, payload: { id: number; success: () => void }) => {
+    removeById: async (state, payload: { id: number; success: () => void; }) => {
       try {
         await article.deleteArticle(payload.id);
         payload.success();

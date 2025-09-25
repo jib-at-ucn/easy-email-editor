@@ -44,6 +44,7 @@ import enUS from '@arco-design/web-react/es/locale/en-US';
 
 import { useShowCommercialEditor } from '@demo/hooks/useShowCommercialEditor';
 import { useWindowSize } from 'react-use';
+import { environment } from '@demo/environment';
 
 const defaultCategories: ExtensionProps['categories'] = [
   {
@@ -117,18 +118,12 @@ export default function Editor() {
   const templateData = useAppSelector('template');
   const { width } = useWindowSize();
   const compact = width > 1600;
-  const { id, userId } = useQuery();
+  const { id } = useQuery();
   const loading = useLoading(template.loadings.fetchById);
 
   useEffect(() => {
     if (id) {
-      if (!userId) {
-        UserStorage.getAccount().then(account => {
-          dispatch(template.actions.fetchById({ id: +id, userId: account.user_id }));
-        });
-      } else {
-        dispatch(template.actions.fetchById({ id: +id, userId: +userId }));
-      }
+      dispatch(template.actions.fetchById({ uid: (id as string) }));
     } else {
       dispatch(template.actions.fetchDefaultTemplate(undefined));
     }
@@ -136,44 +131,59 @@ export default function Editor() {
     return () => {
       dispatch(template.actions.set(null));
     };
-  }, [dispatch, id, userId]);
+  }, [dispatch, id]);
 
   const onUploadImage = async (blob: Blob) => {
     return services.common.uploadByQiniu(blob);
   };
 
-  const onExportMJML = (values: IEmailTemplate) => {
-    const mjmlString = JsonToMjml({
-      data: values.content,
-      mode: 'production',
-      context: values.content,
-    });
+  // const onExportMJML = (values: IEmailTemplate) => {
+  //   const mjmlString = JsonToMjml({
+  //     data: values.content,
+  //     mode: 'production',
+  //     context: values.content,
+  //   });
+  //   pushEvent({ event: 'MJMLExport', payload: { values } });
+  //   navigator.clipboard.writeText(mjmlString);
+  //   saveAs(new Blob([mjmlString], { type: 'text/mjml' }), 'easy-email.mjml');
+  // };
 
-    pushEvent({ event: 'MJMLExport', payload: { values } });
-    navigator.clipboard.writeText(mjmlString);
-    saveAs(new Blob([mjmlString], { type: 'text/mjml' }), 'easy-email.mjml');
-  };
-
-  const onExportHTML = (values: IEmailTemplate) => {
-    const mjmlString = JsonToMjml({
-      data: values.content,
-      mode: 'production',
-      context: values.content,
-    });
-
-    const html = mjml(mjmlString, {}).html;
-
-    pushEvent({ event: 'HTMLExport', payload: { values } });
-    navigator.clipboard.writeText(html);
-    saveAs(new Blob([html], { type: 'text/html' }), 'easy-email.html');
-  };
+  // const onExportHTML = (values: IEmailTemplate) => {
+  //   const mjmlString = JsonToMjml({
+  //     data: values.content,
+  //     mode: 'production',
+  //     context: values.content,
+  //   });
+  //   const html = mjml(mjmlString, {}).html;
+  //   pushEvent({ event: 'HTMLExport', payload: { values } });
+  //   navigator.clipboard.writeText(html);
+  //   saveAs(new Blob([html], { type: 'text/html' }), 'easy-email.html');
+  // };
 
   const onExportJSON = (values: IEmailTemplate) => {
+    fetch(environment.baseUrl + `/templates/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(values)
+    });
+
+    fetch(environment.baseUrl + `/previews/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'text/xml' },
+      body: JsonToMjml({
+        mode: 'production',
+        data: values.content,
+        context: values.content,
+      })
+    });
+
+    /*
     navigator.clipboard.writeText(JSON.stringify(values, null, 2));
     saveAs(
       new Blob([JSON.stringify(values, null, 2)], { type: 'application/json' }),
       'easy-email.json',
     );
+    */
   };
 
   const initialValues: IEmailTemplate | null = useMemo(() => {
@@ -219,11 +229,14 @@ export default function Editor() {
               <>
                 <PageHeader
                   style={{ background: 'var(--color-bg-2)' }}
-                  backIcon
                   title='Edit'
                   onBack={() => history.push('/')}
                   extra={
                     <Stack alignment='center'>
+                      <Button onClick={() => onExportJSON(values)}>
+                        <strong>Save</strong>
+                      </Button>
+                      {/*
                       <Dropdown
                         droplist={
                           <Menu>
@@ -252,13 +265,7 @@ export default function Editor() {
                           <strong>Export</strong>
                         </Button>
                       </Dropdown>
-                      <Button
-                        type='primary'
-                        target='_blank'
-                        href='https://demo.easyemail.pro?utm_source=easyemail'
-                      >
-                        Try commercial version
-                      </Button>
+                      */}
                     </Stack>
                   }
                 />
